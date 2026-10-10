@@ -1,0 +1,3 @@
+# Archivos que no se subirán al repositorio
+*.log
+*.tmp	
