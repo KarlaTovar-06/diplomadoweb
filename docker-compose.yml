@@ -1,9 +1,8 @@
-# Entorno completo del portafolio (Laravel + React + MariaDB + Mailpit)
-# Todos los valores se leen del archivo .env ubicado junto a este compose.
+
 name: portafolio
 
 services:
-  # API Laravel (PHP 8.4 + Apache)
+  # API Laravel 
   backend:
     build:
       context: ./backend
@@ -22,7 +21,7 @@ services:
     networks:
       - portafolio
 
-  # SPA React + Vite servida por nginx (proxy /api -> backend)
+  # SPA React + Vite 
   frontend:
     build:
       context: ./frontend
@@ -61,7 +60,7 @@ services:
     networks:
       - portafolio
 
-  # Servidor de correo de pruebas (SMTP + panel web)
+  # Servidor de correo 
   mailpit:
     image: axllent/mailpit:latest
     container_name: portafolio-mailpit
