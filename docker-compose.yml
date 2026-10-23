@@ -1,0 +1,85 @@
+# Entorno completo del portafolio (Laravel + React + MariaDB + Mailpit)
+# Todos los valores se leen del archivo .env ubicado junto a este compose.
+name: portafolio
+
+services:
+  # API Laravel (PHP 8.4 + Apache)
+  backend:
+    build:
+      context: ./backend
+    image: portafolio/backend:latest
+    container_name: portafolio-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${BACKEND_PORT:-8000}:80"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    networks:
+      - portafolio
+
+  # SPA React + Vite servida por nginx (proxy /api -> backend)
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL:-/api}
+    image: portafolio/frontend:latest
+    container_name: portafolio-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - portafolio
+
+  # Base de datos
+  mariadb:
+    image: mariadb:11
+    container_name: portafolio-mariadb
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${DB_DATABASE}
+      MARIADB_USER: ${DB_USERNAME}
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${FORWARD_DB_PORT:-13306}:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - portafolio
+
+  # Servidor de correo de pruebas (SMTP + panel web)
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: portafolio-mailpit
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-America/Mexico_City}
+      MP_MAX_MESSAGES: ${MP_MAX_MESSAGES:-100}
+    ports:
+      - "${FORWARD_MAILPIT_PORT:-1025}:1025"
+      - "${FORWARD_MAILPIT_DASHBOARD_PORT:-8025}:8025"
+    networks:
+      - portafolio
+
+volumes:
+  mariadb_data:
+    driver: local
+
+networks:
+  portafolio:
+    driver: bridge
+    name: portafolio
